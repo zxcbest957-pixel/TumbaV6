@@ -35,18 +35,20 @@ local MainFrame = Instance.new('Frame')
 MainFrame.Name = 'MainFrame'
 MainFrame.Size = UDim2.fromOffset(360, 180)
 MainFrame.Position = UDim2.new(0.5, -180, 0.5, -90)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+MainFrame.BackgroundTransparency = 0.35
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
 local UICorner = Instance.new('UICorner')
-UICorner.CornerRadius = UDim.new(0, 12)
+UICorner.CornerRadius = UDim.new(0, 10)
 UICorner.Parent = MainFrame
 
 local UIStroke = Instance.new('UIStroke')
-UIStroke.Color = Color3.fromRGB(45, 45, 55)
-UIStroke.Thickness = 1.5
+UIStroke.Color = Color3.fromRGB(255, 255, 255)
+UIStroke.Transparency = 0.82
+UIStroke.Thickness = 1.2
 UIStroke.Parent = MainFrame
 
 local Title = Instance.new('TextLabel')
@@ -80,7 +82,8 @@ Status.Parent = MainFrame
 local BarContainer = Instance.new('Frame')
 BarContainer.Size = UDim2.new(1, -60, 0, 8)
 BarContainer.Position = UDim2.new(0, 30, 0, 110)
-BarContainer.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+BarContainer.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+BarContainer.BackgroundTransparency = 0.9
 BarContainer.BorderSizePixel = 0
 BarContainer.Parent = MainFrame
 
