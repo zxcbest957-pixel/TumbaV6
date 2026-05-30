@@ -5114,6 +5114,214 @@ run(function()
 end)
 
 run(function()
+	local Trajectory
+	local Color
+	local Thickness
+	local Opacity
+	local CircleRadius
+	local Connection
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+	-- Part Pool implementation to prevent garbage collection and frame rate drop
+	local partPool = {}
+	local poolFolder
+
+	local function getPoolPart()
+		for _, part in partPool do
+			if not part.Parent then
+				part.Parent = poolFolder
+				return part
+			end
+		end
+		local part = Instance.new('Part')
+		part.Anchored = true
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		part.CastShadow = false
+		part.Material = Enum.Material.Neon
+		table.insert(partPool, part)
+		part.Parent = poolFolder
+		return part
+	end
+
+	local function clearPool()
+		for _, part in partPool do
+			part.Parent = nil
+		end
+	end
+
+	local hitIndicator
+	local function getHitIndicator()
+		if not hitIndicator then
+			hitIndicator = Instance.new('Part')
+			hitIndicator.Anchored = true
+			hitIndicator.CanCollide = false
+			hitIndicator.CanQuery = false
+			hitIndicator.CanTouch = false
+			hitIndicator.CastShadow = false
+			hitIndicator.Material = Enum.Material.Neon
+			hitIndicator.Shape = Enum.PartType.Ball
+		end
+		hitIndicator.Parent = poolFolder
+		return hitIndicator
+	end
+
+	local function getProjectileStats(itemName)
+		-- Defaults
+		local speed = 100
+		local gravity = 13.5
+
+		local meta = bedwars.ItemMeta[itemName]
+		if meta then
+			if meta.projectileSource then
+				local projType = meta.projectileSource.projectileType
+				local finalProjType = typeof(projType) == 'function' and projType('arrow') or projType
+				local projMeta = bedwars.ProjectileMeta[finalProjType]
+				if projMeta then
+					gravity = projMeta.gravitationalAcceleration or gravity
+					if projMeta.combat then
+						speed = projMeta.combat.velocity or speed
+					end
+				end
+			elseif meta.throwableSource then
+				local projMeta = bedwars.ProjectileMeta[meta.throwableSource.projectileType]
+				if projMeta then
+					gravity = projMeta.gravitationalAcceleration or gravity
+					if projMeta.combat then
+						speed = projMeta.combat.velocity or speed
+					end
+				end
+			end
+		end
+		return speed, gravity
+	end
+
+	Trajectory = tumbahub.Categories.Render:CreateModule({
+		Name = 'Trajectory',
+		Tooltip = 'Draws visual 3D trajectory line for arrows, pearls, and fireballs',
+		Function = function(callback)
+			if callback then
+				poolFolder = Instance.new('Folder')
+				poolFolder.Name = 'TumbahubTrajectory'
+				poolFolder.Parent = workspace.Terrain
+
+				Connection = runService.RenderStepped:Connect(function()
+					clearPool()
+					if hitIndicator then hitIndicator.Parent = nil end
+
+					if not entitylib.isAlive then return end
+					
+					-- Check active item
+					local activeItem = store.inventory.inventory.hand
+					if not activeItem then
+						local char = lplr.Character
+						local handVal = char and char:FindFirstChild('HandInvItem')
+						if handVal and handVal.Value ~= "" and handVal.Value ~= "none" then
+							activeItem = { itemType = handVal.Value }
+						end
+					end
+					
+					if not activeItem then return end
+					local itemName = activeItem.itemType
+					local isBow = itemName:find('bow') or itemName:find('crossbow')
+					local isThrowable = itemName:find('pearl') or itemName:find('fireball') or itemName:find('telepearl') or itemName:find('snowball')
+
+					if not (isBow or isThrowable) then return end
+
+					-- Calculate stats
+					local speed, gravity = getProjectileStats(itemName)
+
+					local origin = entitylib.character.RootPart.Position + Vector3.new(0, 1.5, 0)
+					local lookDir = gameCamera.CFrame.LookVector
+					
+					if isBow then
+						speed = speed * 1.05
+					end
+
+					local g = Vector3.new(0, -gravity, 0)
+					local velocity = lookDir * speed
+
+					local prevPos = origin
+					local steps = 30
+					local stepTime = 0.05
+					local hitIndicatorSize = CircleRadius.Value
+
+					rayParams.FilterDescendantsInstances = {lplr.Character, poolFolder}
+
+					local colorVal = Color3.fromHSV(Color.Hue, Color.Sat, Color.Value)
+					local opacityVal = Opacity.Value
+					local thicknessVal = Thickness.Value
+
+					for i = 1, steps do
+						local t = i * stepTime
+						local nextPos = origin + velocity * t + 0.5 * g * t * t
+						
+						local ray = workspace:Raycast(prevPos, nextPos - prevPos, rayParams)
+						if ray then
+							local l = getPoolPart()
+							local dist = (ray.Position - prevPos).Magnitude
+							l.Size = Vector3.new(thicknessVal, thicknessVal, dist)
+							l.CFrame = CFrame.lookAt(prevPos, ray.Position) * CFrame.new(0, 0, -dist / 2)
+							l.Color = colorVal
+							l.Transparency = opacityVal
+
+							local indicator = getHitIndicator()
+							indicator.Size = Vector3.new(hitIndicatorSize, hitIndicatorSize, hitIndicatorSize)
+							indicator.CFrame = CFrame.new(ray.Position)
+							indicator.Color = colorVal
+							indicator.Transparency = opacityVal
+							break
+						else
+							local l = getPoolPart()
+							local dist = (nextPos - prevPos).Magnitude
+							l.Size = Vector3.new(thicknessVal, thicknessVal, dist)
+							l.CFrame = CFrame.lookAt(prevPos, nextPos) * CFrame.new(0, 0, -dist / 2)
+							l.Color = colorVal
+							l.Transparency = opacityVal
+						end
+						prevPos = nextPos
+					end
+				end)
+			else
+				if Connection then Connection:Disconnect() end
+				if poolFolder then poolFolder:Destroy() poolFolder = nil end
+				if hitIndicator then hitIndicator:Destroy() hitIndicator = nil end
+				table.clear(partPool)
+			end
+		end
+	})
+
+	Color = Trajectory:CreateColorSlider({
+		Name = 'Line Color',
+		DefaultOpacity = 0.2
+	})
+	Thickness = Trajectory:CreateSlider({
+		Name = 'Line Thickness',
+		Min = 0.01,
+		Max = 0.5,
+		Default = 0.1,
+		Decimal = 100
+	})
+	Opacity = Trajectory:CreateSlider({
+		Name = 'Line Opacity',
+		Min = 0,
+		Max = 1,
+		Default = 0.2,
+		Decimal = 100
+	})
+	CircleRadius = Trajectory:CreateSlider({
+		Name = 'Marker Size',
+		Min = 0.1,
+		Max = 3,
+		Default = 1,
+		Decimal = 10
+	})
+end)
+
+run(function()
 	local old
 
 	tumbahub.Categories.Render:CreateModule({
