@@ -224,10 +224,10 @@ local function finishLoading()
 	end
 	if tumbahub.Categories.Main.Options['GUI bind indicator'].Enabled then
 		if getgenv().tumbarole == 'HWID mismatch' then
-			tumbahub:CreateNotification('Cat', 'HWID mismatch, Please go to our server And press reset hwid on script panel', 60, 'alert')
+			tumbahub:CreateNotification('TumbaHub', 'HWID mismatch, Please go to our server And press reset hwid on script panel', 60, 'alert')
 			task.wait(0.5)
 		else
-			tumbahub:CreateNotification('Cat', 'Authenticated as '.. (getgenv().tumbaname or 'Guest').. ' with ('.. (getgenv().tumbarole or 'Free').. ')', 4, 'info')
+			tumbahub:CreateNotification('TumbaHub', 'Authenticated as '.. (getgenv().tumbaname or 'Guest').. ' with ('.. (getgenv().tumbarole or 'Free').. ')', 4, 'info')
 			task.wait(4)
 		end
 		tumbahub:CreateNotification('Finished Loading', not inputService.KeyboardEnabled and tumbahub.TumbaHubButton and 'Press the button in the top right to open GUI' or 'Press '..table.concat(tumbahub.Keybind, ' + '):upper()..' to open GUI', 5)
