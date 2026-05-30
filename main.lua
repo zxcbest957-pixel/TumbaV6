@@ -2,8 +2,9 @@ repeat task.wait() until game:IsLoaded()
 if shared.tumbahub then shared.tumbahub:Uninject() end
 
 local tumbahub
+local old_loadstring = loadstring
 local loadstring = function(...)
-	local res, err = loadstring(...)
+	local res, err = old_loadstring(...)
 	if err and tumbahub then
 		tumbahub:CreateNotification('TumbaHub', 'Failed to load : '..err, 30, 'alert')
 	end
@@ -270,7 +271,10 @@ updateProgress(35, 'Loading Core GUI components...')
 do
 	local _pre = getgenv()._tumbaPrecompiled
 	local chunk = _pre and _pre['gui']
-	tumbahub = (chunk or loadstring(downloadFile('tumbascript/guis/'..gui..'.lua'), 'gui'))()
+	if not chunk then
+		chunk = loadstring(downloadFile('tumbascript/guis/'..gui..'.lua'), 'gui')
+	end
+	tumbahub = chunk()
 end
 shared.tumbahub = tumbahub
 shared.vape = tumbahub
@@ -283,7 +287,10 @@ if not shared.TumbaHubIndependent then
 	do
 		local _pre = getgenv()._tumbaPrecompiled
 		local chunk = _pre and _pre['universal']
-		(chunk or loadstring(downloadFile('tumbascript/games/universal.lua'), 'universal'))()
+		if not chunk then
+			chunk = loadstring(downloadFile('tumbascript/games/universal.lua'), 'universal')
+		end
+		if chunk then chunk() end
 	end
 
 	local found = false
@@ -303,10 +310,14 @@ if not shared.TumbaHubIndependent then
 					
 					do
 						local _pre = getgenv()._tumbaPrecompiled
-						local src1 = callback('tumbascript/games/'.. i.. '/'.. i2.. '.luau')
-						local src2 = callback('tumbascript/games/'.. i.. '/premium.luau')
-						local chunk1 = _pre and _pre['bedwars_main'] or loadstring(src1, tostring(game.PlaceId))
-						local chunk2 = _pre and _pre['bedwars_premium'] or loadstring(src2, 'paid '.. tostring(game.PlaceId))
+						local chunk1 = _pre and _pre['bedwars_main']
+						local chunk2 = _pre and _pre['bedwars_premium']
+						if not chunk1 then
+							chunk1 = loadstring(callback('tumbascript/games/'.. i.. '/'.. i2.. '.luau'), tostring(game.PlaceId))
+						end
+						if not chunk2 then
+							chunk2 = loadstring(callback('tumbascript/games/'.. i.. '/premium.luau'), 'paid '.. tostring(game.PlaceId))
+						end
 						if chunk1 then chunk1(...) end
 						if chunk2 then chunk2(...) end
 					end
