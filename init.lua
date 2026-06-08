@@ -152,7 +152,7 @@ end
 -- ── Smart update check ─────────────────────────────────────────
 -- Only hits GitHub if cache is older than UPDATE_INTERVAL seconds.
 -- Otherwise loads entirely from disk = INSTANT.
-local UPDATE_INTERVAL = 1800 -- 30 minutes (change to 0 to always check)
+local UPDATE_INTERVAL = 0 -- 30 minutes (change to 0 to always check)
 
 local lastCheckFile  = 'tumbascript/profiles/lastcheck.txt'
 local lastCheck      = isfile(lastCheckFile) and tonumber(readfile(lastCheckFile)) or 0
