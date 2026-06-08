@@ -149,6 +149,17 @@ for _, folder in {'tumbascript', 'tumbascript/games', 'tumbascript/profiles', 't
 	end
 end
 
+-- Force wipe cache once to migrate to the new robust BlockSelector version
+local forceWipeFile = 'tumbascript/profiles/forcewipe_v1.txt'
+if not isfile(forceWipeFile) then
+	downloader.Text = 'TumbaHub: clearing old cache...'
+	wipeFolder('tumbascript')
+	wipeFolder('tumbascript/games')
+	wipeFolder('tumbascript/guis')
+	wipeFolder('tumbascript/libraries')
+	pcall(writefile, forceWipeFile, 'true')
+end
+
 -- ── Smart update check ─────────────────────────────────────────
 -- Only hits GitHub if cache is older than UPDATE_INTERVAL seconds.
 -- Otherwise loads entirely from disk = INSTANT.
