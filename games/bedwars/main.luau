@@ -816,7 +816,21 @@ run(function()
         BlockBreaker = Knit.Controllers.BlockBreakController and Knit.Controllers.BlockBreakController.blockBreaker or nil,
         BlockController = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out).BlockEngine,
         BlockEngine = require(lplr.PlayerScripts.TS.lib['block-engine']['client-block-engine']).ClientBlockEngine,
-        BlockPlacer = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out.client.placement['block-placer']).BlockPlacer,
+        BlockPlacer = (function()
+            local success, res = pcall(function()
+                return require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out.client.placement['block-placer']).BlockPlacer
+            end)
+            if success and res then return res end
+            return {
+                new = function()
+                    return {
+                        placeBlock = function() end,
+                        disable = function() end,
+                        autoBridge = function() end,
+                    }
+                end
+            }
+        end)(),
         BlockSelector = (function()
             local success, res = pcall(function()
                 return require(replicatedStorage.rbxts_include.node_modules['@easy-games']['block-engine'].out.client.select['block-selector']).BlockSelector

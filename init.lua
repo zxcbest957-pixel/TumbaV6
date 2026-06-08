@@ -129,14 +129,29 @@ local function fetchParallel(path)
 	end)
 end
 
+local function toRelativePath(path)
+	local matched = path:match("tumbascript[/\\][^\n\r]+")
+	if matched then
+		return matched:gsub("\\", "/")
+	end
+	return path
+end
+
 local function wipeFolder(path)
-	if not isfolder(path) then return end
-	for _, file in listfiles(path) do
-		if file:find('init') then continue end
-		if file:find('profile') then continue end
-		if isfile(file) then
-			delfile(file)
-		elseif isfolder(file) then
+	local relPath = toRelativePath(path)
+	if not isfolder(relPath) then return end
+	local ok, files = pcall(listfiles, relPath)
+	if not ok or not files then
+		ok, files = pcall(listfiles, path)
+	end
+	if not ok or not files then return end
+	for _, file in files do
+		local relFile = toRelativePath(file)
+		if relFile:find('init') then continue end
+		if relFile:find('profile') then continue end
+		if isfile(relFile) then
+			pcall(delfile, relFile)
+		elseif isfolder(relFile) then
 			wipeFolder(file)
 		end
 	end
@@ -144,11 +159,12 @@ end
 
 local function safeDeleteFolder(path)
 	pcall(function()
+		local relPath = toRelativePath(path)
 		if delfolder then
-			delfolder(path)
-		else
-			wipeFolder(path)
+			pcall(delfolder, relPath)
+			pcall(delfolder, path)
 		end
+		wipeFolder(path)
 	end)
 end
 
@@ -160,7 +176,7 @@ for _, folder in {'tumbascript', 'tumbascript/games', 'tumbascript/profiles', 't
 end
 
 -- Force wipe cache once to migrate to the new robust BlockSelector version
-local forceWipeFile = 'tumbascript/profiles/forcewipe_v2.txt'
+local forceWipeFile = 'tumbascript/profiles/forcewipe_v3.txt'
 if not isfile(forceWipeFile) then
 	downloader.Text = 'TumbaHub: clearing old cache...'
 	safeDeleteFolder('tumbascript/games')
