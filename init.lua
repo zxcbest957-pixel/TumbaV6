@@ -142,6 +142,16 @@ local function wipeFolder(path)
 	end
 end
 
+local function safeDeleteFolder(path)
+	pcall(function()
+		if delfolder then
+			delfolder(path)
+		else
+			wipeFolder(path)
+		end
+	end)
+end
+
 -- ── Create folders ─────────────────────────────────────────────
 for _, folder in {'tumbascript', 'tumbascript/games', 'tumbascript/profiles', 'tumbascript/assets', 'tumbascript/libraries', 'tumbascript/guis'} do
 	if not isfolder(folder) then
@@ -150,13 +160,13 @@ for _, folder in {'tumbascript', 'tumbascript/games', 'tumbascript/profiles', 't
 end
 
 -- Force wipe cache once to migrate to the new robust BlockSelector version
-local forceWipeFile = 'tumbascript/profiles/forcewipe_v1.txt'
+local forceWipeFile = 'tumbascript/profiles/forcewipe_v2.txt'
 if not isfile(forceWipeFile) then
 	downloader.Text = 'TumbaHub: clearing old cache...'
-	wipeFolder('tumbascript')
-	wipeFolder('tumbascript/games')
-	wipeFolder('tumbascript/guis')
-	wipeFolder('tumbascript/libraries')
+	safeDeleteFolder('tumbascript/games')
+	safeDeleteFolder('tumbascript/guis')
+	safeDeleteFolder('tumbascript/libraries')
+	safeDeleteFolder('tumbascript/assets')
 	pcall(writefile, forceWipeFile, 'true')
 end
 
@@ -194,10 +204,10 @@ if not shared.TumbaHubDeveloper and needsCheck then
 	if commit ~= cached then
 		if cached ~= '' then shared.updated = cached end
 		downloader.Text = 'TumbaHub: new version, updating...'
-		wipeFolder('tumbascript')
-		wipeFolder('tumbascript/games')
-		wipeFolder('tumbascript/guis')
-		wipeFolder('tumbascript/libraries')
+		safeDeleteFolder('tumbascript/games')
+		safeDeleteFolder('tumbascript/guis')
+		safeDeleteFolder('tumbascript/libraries')
+		safeDeleteFolder('tumbascript/assets')
 	end
 
 	writefile('tumbascript/profiles/commit.txt', commit)
