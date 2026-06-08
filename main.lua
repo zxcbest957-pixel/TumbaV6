@@ -1,18 +1,79 @@
 pcall(function()
+	local original_os_time = os.time
+	local original_os_date = os.date
+	local timeOffset = 0
+	local source = "None"
+	
+	-- Try Workspace:GetServerTimeNow()
 	local ws = game:GetService("Workspace") or workspace
-	if ws and ws.GetServerTimeNow then
-		local original_os_time = os.time
-		local original_os_date = os.date
+	local success, result = pcall(function()
+		return ws and ws.GetServerTimeNow and ws:GetServerTimeNow()
+	end)
+	if success and result and typeof(result) == "number" and result > 1000000000 then
+		timeOffset = math.floor(result) - original_os_time()
+		source = "Workspace"
+	else
+		-- Fallback to HttpGet from a public time API
+		for _, urlInfo in ipairs({
+			{url = "http://worldtimeapi.org/api/timezone/Etc/UTC", pattern = '"unixtime":%s*(%d+)', divisor = 1},
+			{url = "https://worldtimeapi.org/api/timezone/Etc/UTC", pattern = '"unixtime":%s*(%d+)', divisor = 1},
+			{url = "http://date.jsontest.com/", pattern = '"milliseconds_since_epoch":%s*(%d+)', divisor = 1000}
+		}) do
+			local httpSuccess, response = pcall(function()
+				return game:HttpGet(urlInfo.url, true)
+			end)
+			if httpSuccess and response then
+				local match = response:match(urlInfo.pattern)
+				if match then
+					local t = tonumber(match)
+					if t then
+						t = math.floor(t / urlInfo.divisor)
+						if t > 1000000000 then
+							timeOffset = t - original_os_time()
+							source = "WebAPI (" .. urlInfo.url:match("://([^/]+)") .. ")"
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- Apply hooks if offset is calculated
+	if source ~= "None" then
+		print("[TumbaTimeSync] Synchronized clock using " .. source .. ". Offset: " .. timeOffset .. " seconds.")
 		
 		local function getSyncedTime()
-			return math.floor(ws:GetServerTimeNow())
+			return original_os_time() + timeOffset
 		end
 		
 		os.time = getSyncedTime
-		
 		os.date = function(format, time)
 			return original_os_date(format, time or getSyncedTime())
 		end
+		
+		local env = (getgenv and getgenv()) or _G
+		
+		-- Hook tick()
+		local original_tick = tick
+		env.tick = function()
+			return original_tick() + timeOffset
+		end
+		
+		-- Hook DateTime.now
+		if DateTime then
+			local original_datetime_now = DateTime.now
+			local DateTime_mock = {}
+			for k, v in DateTime do
+				DateTime_mock[k] = v
+			end
+			DateTime_mock.now = function()
+				return DateTime.fromUnixTimestamp(getSyncedTime())
+			end
+			env.DateTime = DateTime_mock
+		end
+	else
+		warn("[TumbaTimeSync] Failed to synchronize clock from any source.")
 	end
 end)
 repeat task.wait() until game:IsLoaded()
