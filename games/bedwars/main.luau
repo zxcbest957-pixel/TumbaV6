@@ -801,9 +801,24 @@ run(function()
 	until (Knit.Controllers and Knit.Controllers.NotificationController) or (tick() - t0 > 5)
 
 	bedwars = setmetatable({
-		AbilityController = Flamework.resolveDependency('@easy-games/game-core:client/controllers/ability/ability-controller@AbilityController'),
-        CooldownController = Flamework.resolveDependency('@easy-games/game-core:client/controllers/cooldown/cooldown-controller@CooldownController'),
-        NotificationController = Flamework.resolveDependency('@easy-games/game-core:client/controllers/notification-controller@NotificationController'),
+		AbilityController = (function()
+			local success, res = pcall(function()
+				return Flamework.resolveDependency('@easy-games/game-core:client/controllers/ability/ability-controller@AbilityController')
+			end)
+			return success and res or nil
+		end)(),
+        CooldownController = (function()
+			local success, res = pcall(function()
+				return Flamework.resolveDependency('@easy-games/game-core:client/controllers/cooldown/cooldown-controller@CooldownController')
+			end)
+			return success and res or nil
+		end)(),
+        NotificationController = (function()
+			local success, res = pcall(function()
+				return Flamework.resolveDependency('@easy-games/game-core:client/controllers/notification-controller@NotificationController')
+			end)
+			return success and res or nil
+		end)(),
         AnimationType = require(replicatedStorage.TS.animation['animation-type']).AnimationType,
         AnimationUtil = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out['shared'].util['animation-util']).AnimationUtil,
 		StatusEffectUtil = require(replicatedStorage.TS['status-effect']['status-effect-util']).StatusEffectUtil,
@@ -1019,12 +1034,22 @@ run(function()
         HudAliveCount = require(lplr.PlayerScripts.TS.controllers.global['top-bar'].ui.game['hud-alive-player-counts']).HudAlivePlayerCounts,
         ItemMeta = require(replicatedStorage.TS.item['item-meta']).items,
         KillEffectMeta = require(replicatedStorage.TS.locker['kill-effect']['kill-effect-meta']).KillEffectMeta,
-        KillFeedController = Flamework.resolveDependency('client/controllers/game/kill-feed/kill-feed-controller@KillFeedController'),
+        KillFeedController = (function()
+			local success, res = pcall(function()
+				return Flamework.resolveDependency('client/controllers/game/kill-feed/kill-feed-controller@KillFeedController')
+			end)
+			return success and res or { addToKillFeed = function() end }
+		end)(),
         Knit = Knit,
         KnockbackUtil = require(replicatedStorage.TS.damage['knockback-util']).KnockbackUtil,
         MageKitUtil = require(replicatedStorage.TS.games.bedwars.kit.kits.mage['mage-kit-util']).MageKitUtil,
         NametagController = Knit.Controllers.NametagController,
-        PartyController = Flamework.resolveDependency('@easy-games/lobby:client/controllers/party-controller@PartyController'),
+        PartyController = (function()
+			local success, res = pcall(function()
+				return Flamework.resolveDependency('@easy-games/lobby:client/controllers/party-controller@PartyController')
+			end)
+			return success and res or nil
+		end)(),
         ProjectileMeta = require(replicatedStorage.TS.projectile['projectile-meta']).ProjectileMeta,
         QueryUtil = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out).GameQueryUtil,
         QueueCard = require(lplr.PlayerScripts.TS.controllers.global.queue.ui['queue-card']).QueueCard,

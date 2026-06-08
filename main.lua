@@ -1,4 +1,95 @@
 pcall(function()
+	local originalHttpGet
+	pcall(function()
+		originalHttpGet = game.HttpGet
+	end)
+
+	local function customHttpGet(url)
+		local req = request or (http and http.request)
+		if req then
+			local success, res = pcall(function()
+				return req({
+					Url = url,
+					Method = "GET"
+				})
+			end)
+			if success and res and res.Body then
+				return res.Body
+			end
+		end
+		if originalHttpGet then
+			local success, res = pcall(function()
+				return originalHttpGet(game, url, true)
+			end)
+			if success then
+				return res
+			end
+		end
+		error("HttpGet failed for URL: " .. tostring(url))
+	end
+
+	local hooked = false
+	if hookmetamethod then
+		pcall(function()
+			local old; old = hookmetamethod(game, "__index", function(self, key)
+				if key == "HttpGet" or key == "HttpGetAsync" then
+					return function(self, url, ...)
+						return customHttpGet(url)
+					end
+				end
+				return old(self, key)
+			end)
+			hooked = true
+		end)
+	end
+
+	if not hooked and getrawmetatable then
+		pcall(function()
+			local mt = getrawmetatable(game)
+			local old = mt.__index
+			setreadonly(mt, false)
+			mt.__index = function(self, key)
+				if key == "HttpGet" or key == "HttpGetAsync" then
+					return function(self, url, ...)
+						return customHttpGet(url)
+					end
+				end
+				return old(self, key)
+			end
+			setreadonly(mt, true)
+			hooked = true
+		end)
+	end
+
+	if not hooked then
+		local realGame = game
+		local gameProxy = setmetatable({}, {
+			__index = function(self, key)
+				if key == "HttpGet" or key == "HttpGetAsync" then
+					return function(self, url, ...)
+						return customHttpGet(url)
+					end
+				end
+				local val = realGame[key]
+				if typeof(val) == "function" then
+					return function(self, ...)
+						return val(realGame, ...)
+					end
+				end
+				return val
+			end,
+			__newindex = function(self, key, value)
+				realGame[key] = value
+			end,
+			__tostring = function()
+				return tostring(realGame)
+			end
+		})
+		getgenv().game = gameProxy
+	end
+end)
+
+pcall(function()
 	local original_os_time = os.time
 	local original_os_date = os.date
 	local timeOffset = 0
