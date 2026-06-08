@@ -817,7 +817,17 @@ run(function()
         BlockController = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out).BlockEngine,
         BlockEngine = require(lplr.PlayerScripts.TS.lib['block-engine']['client-block-engine']).ClientBlockEngine,
         BlockPlacer = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['block-engine'].out.client.placement['block-placer']).BlockPlacer,
-        BlockSelector = require(replicatedStorage.rbxts_include.node_modules['@easy-games']['block-engine'].out.client.select['block-selector']).BlockSelector,
+        BlockSelector = (function()
+            local success, res = pcall(function()
+                return require(replicatedStorage.rbxts_include.node_modules['@easy-games']['block-engine'].out.client.select['block-selector']).BlockSelector
+            end)
+            if success and res then return res end
+            success, res = pcall(function()
+                return getmetatable(Knit.Controllers.BlockBreakController.blockBreaker.clientManager:getBlockSelector()).__index
+            end)
+            if success and res then return res end
+            return { getMouseInfo = function() end }
+        end)(),
         BowConstantsTable = canDebug and Knit.Controllers.ProjectileController and debug.getupvalue(Knit.Controllers.ProjectileController.enableBeam, 8) or {RelX = 0, RelY = 0, RelZ = 0},
         SharedConstants = canDebug and require(replicatedStorage.TS['shared-constants']).CpsConstants or {},
         ClickHold = require(replicatedStorage['rbxts_include']['node_modules']['@easy-games']['game-core'].out.client.ui.lib.util['click-hold']).ClickHold,
