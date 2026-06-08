@@ -1,4 +1,21 @@
 --!nocheck
+pcall(function()
+	local ws = game:GetService("Workspace") or workspace
+	if ws and ws.GetServerTimeNow then
+		local original_os_time = os.time
+		local original_os_date = os.date
+		
+		local function getSyncedTime()
+			return math.floor(ws:GetServerTimeNow())
+		end
+		
+		os.time = getSyncedTime
+		
+		os.date = function(format, time)
+			return original_os_date(format, time or getSyncedTime())
+		end
+	end
+end)
 shared.tumbadata = ... or {}
 shared.tumbadata.Key = script_key
 local isfile = isfile or function(file)
